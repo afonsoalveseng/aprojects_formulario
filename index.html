@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard de Leads - DigitalSat</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="backdrop" id="backdrop"></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2.6l8.2 4.7v9.4L12 21.4 3.8 16.7V7.3L12 2.6Z" stroke="rgba(255,255,255,0.92)" stroke-width="1.6"/>
+            <path d="M12 7.3l4.9 2.8v5.8L12 18.7 7.1 15.9V10.1L12 7.3Z" fill="rgba(37,99,235,0.85)"/>
+          </svg>
+        </div>
+        <div>
+          <div class="logo">DigitalSat</div>
+          <div class="subtitle">CRM de Leads</div>
+        </div>
+      </div>
+
+      <div class="menu">
+        <div class="menu-item active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3 12l9-9 9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 21V12h6v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Dashboard
+        </div>
+        <div class="menu-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M20 21V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M8 12h8M8 16h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          Leads
+        </div>
+        <div class="menu-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 19V5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M4 19h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M8 15l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Gráficos
+        </div>
+        <div class="menu-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          Responsáveis
+        </div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <div>
+          <h1>Dashboard</h1>
+          <p>Visão geral dos leads recebidos pelo site</p>
+        </div>
+        </div>
+        <div class="top-actions">
+          <input type="month" id="monthFilterTop" />
+          <button class="primary" onclick="loadData()">Atualizar</button>
+        </div>
+      </section>
+
+      <section class="cards">
+        <div class="card"><span>Leads totais</span><strong id="totalLeads">0</strong></div>
+        <div class="card"><span>Leads no mês</span><strong id="monthLeads">0</strong></div>
+        <div class="card"><span>Leads qualificados</span><strong id="qualifiedLeads">0</strong></div>
+        <div class="card"><span>Pendentes</span><strong id="pendingLeads">0</strong></div>
+        <div class="card"><span>Contatados</span><strong id="contactedLeads">0</strong></div>
+      </section>
+
+      <section class="filters">
+        <input id="searchInput" placeholder="Buscar por nome, WhatsApp, e-mail, razão social ou CNPJ..." />
+        <select id="statusFilter">
+          <option value="">Todos os status</option>
+        </select>
+        <select id="responsavelFilter">
+          <option value="">Todos responsáveis</option>
+        </select>
+        <input type="month" id="monthFilter" />
+        <button onclick="clearFilters()">Limpar</button>
+        <button class="primary" onclick="applyFilters()">Aplicar</button>
+      </section>
+
+      <section class="charts">
+        <div class="chart-box">
+          <h3>Leads por mês</h3>
+          <canvas id="monthlyChart"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3 id="dailyChartTitle">Leads por dia</h3>
+          <canvas id="dailyChart"></canvas>
+        </div>
+      </section>
+
+      <section class="table-box">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>WhatsApp</th>
+              <th>E-mail</th>
+              <th>Razão Social</th>
+              <th>CNPJ</th>
+              <th>Cidade/UF</th>
+              <th>Perfil</th>
+              <th>Marcas</th>
+              <th>Cadastro</th>
+              <th>Status</th>
+              <th>Responsável</th>
+              <th>Qualificado</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="leadsTable">
+            <tr><td colspan="13" class="loading">Carregando dados...</td></tr>
+          </tbody>
+        </table>
+        <div class="footer-table">
+          <span id="tableCount">0 registros</span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
