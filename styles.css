@@ -45,6 +45,8 @@ a:hover { text-decoration: underline; }
   z-index: 40;
   transform: translateX(0);
   transition: transform 180ms ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-header {
@@ -64,9 +66,12 @@ a:hover { text-decoration: underline; }
   place-items: center;
   box-shadow: 0 10px 25px rgba(2, 6, 23, 0.35);
   flex: 0 0 auto;
+  overflow: hidden;
 }
 
 .brand-mark svg { opacity: 0.95; }
+
+.brand-logo { display: none; }
 
 .logo {
   font-size: 18px;
@@ -83,8 +88,26 @@ a:hover { text-decoration: underline; }
 
 .menu {
   margin-top: 18px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.menu-footer {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  opacity: 0.95;
+}
+
+.menu-footer-logo {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(2, 6, 23, 0.25);
 }
 
 .menu-item {
