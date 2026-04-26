@@ -17,39 +17,42 @@
 <body>
   <div class="backdrop" id="backdrop"></div>
   <div class="layout">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="brand-mark" aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2.6l8.2 4.7v9.4L12 21.4 3.8 16.7V7.3L12 2.6Z" stroke="rgba(255,255,255,0.92)" stroke-width="1.6"/>
-            <path d="M12 7.3l4.9 2.8v5.8L12 18.7 7.1 15.9V10.1L12 7.3Z" fill="rgba(37,99,235,0.85)"/>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <button class="sidebar-collapse-toggle" id="sidebarCollapseToggle" type="button" aria-label="Recolher menu" aria-expanded="true">
+          <svg class="icon-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-        </div>
-        <div>
+        </button>
+      </div>
+
+      <div class="sidebar-header">
+        <div class="brand-text">
           <div class="logo">DigitalSat</div>
           <div class="subtitle">CRM de Leads</div>
         </div>
       </div>
 
       <div class="menu">
-        <button class="menu-item active" type="button" data-view="dashboard">
+        <button class="menu-item active" type="button" data-view="dashboard" title="Dashboard">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M3 12l9-9 9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M9 21V12h6v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          Dashboard
+          <span class="menu-label">Dashboard</span>
         </button>
-        <button class="menu-item" type="button" data-view="leads">
+        <button class="menu-item" type="button" data-view="leads" title="Leads">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M20 21V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
             <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
             <path d="M8 12h8M8 16h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
-          Leads
+          <span class="menu-label">Leads</span>
         </button>
 
         <div class="menu-footer" aria-hidden="true">
-          <img class="menu-footer-logo" src="assets/logo.png" alt="" />
+          <img class="menu-footer-logo menu-footer-logo--open" src="assets/logo1.png" alt="" />
+          <img class="menu-footer-logo menu-footer-logo--collapsed" src="assets/logo2.png" alt="" />
         </div>
       </div>
     </aside>

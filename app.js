@@ -99,6 +99,35 @@ function setupViews() {
   showView('dashboard');
 }
 
+function setupSidebarCollapse() {
+  const sidebar = document.getElementById('sidebar');
+  const btn = document.getElementById('sidebarCollapseToggle');
+  if (!sidebar || !btn) return;
+
+  const storageKey = 'sidebarCollapsed';
+
+  function applyCollapsed(collapsed) {
+    sidebar.classList.toggle('collapsed', collapsed);
+    document.documentElement.style.setProperty('--sidebar-w', collapsed ? 'var(--sidebar-w-collapsed)' : 'var(--sidebar-w-expanded)');
+
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    btn.setAttribute('aria-label', collapsed ? 'Expandir menu' : 'Recolher menu');
+
+    // Chart.js precisa recalcular layout quando a largura muda
+    window.dispatchEvent(new Event('resize'));
+  }
+
+  const saved = localStorage.getItem(storageKey);
+  const collapsed = saved === '1';
+  applyCollapsed(collapsed);
+
+  btn.addEventListener('click', () => {
+    const next = !sidebar.classList.contains('collapsed');
+    localStorage.setItem(storageKey, next ? '1' : '0');
+    applyCollapsed(next);
+  });
+}
+
 // Sidebar responsiva (mobile)
 (function setupMobileSidebar() {
   const toggle = document.getElementById('sidebarToggle');
@@ -284,11 +313,48 @@ function setupPagination() {
 }
 
 function renderCharts() {
-  renderMonthlyChart();
-  renderDailyChart();
+  // Se o Chart.js falhar (CDN bloqueado, offline, etc.), não quebra o app
+  if (typeof Chart === 'undefined') {
+    console.error('Chart.js não carregou (Chart is undefined). Verifique conexão/CDN.');
+    showChartError('Não foi possível carregar os gráficos (Chart.js não carregou).');
+    return;
+  }
+
+  clearChartError();
+
+  try { renderMonthlyChart(); } catch (e) { console.error(e); showChartError('Erro ao desenhar gráfico mensal.'); }
+  try { renderDailyChart(); } catch (e) { console.error(e); showChartError('Erro ao desenhar gráfico diário.'); }
+}
+
+function showChartError(message) {
+  const dashboard = document.querySelector('[data-view-panel="dashboard"]');
+  if (!dashboard) return;
+
+  let el = document.getElementById('chartError');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'chartError';
+    el.style.marginTop = '12px';
+    el.style.padding = '12px 14px';
+    el.style.borderRadius = '14px';
+    el.style.border = '1px solid rgba(248, 113, 113, 0.35)';
+    el.style.background = 'rgba(254, 226, 226, 0.55)';
+    el.style.color = '#7f1d1d';
+    el.style.fontSize = '13px';
+    dashboard.prepend(el);
+  }
+  el.textContent = message;
+}
+
+function clearChartError() {
+  const el = document.getElementById('chartError');
+  if (el) el.remove();
 }
 
 function renderMonthlyChart() {
+  const canvas = document.getElementById('monthlyChart');
+  if (!canvas) return;
+
   const grouped = {};
 
   allLeads.forEach(lead => {
@@ -303,7 +369,7 @@ function renderMonthlyChart() {
 
   if (monthlyChart) monthlyChart.destroy();
 
-  monthlyChart = new Chart(document.getElementById('monthlyChart'), {
+  monthlyChart = new Chart(canvas, {
     type: 'bar',
     data: {
       labels,
@@ -321,6 +387,9 @@ function renderMonthlyChart() {
 }
 
 function renderDailyChart() {
+  const canvas = document.getElementById('dailyChart');
+  if (!canvas) return;
+
   const selectedMonth = document.getElementById('monthFilterTop').value || document.getElementById('monthFilter').value;
   if (!selectedMonth) return;
 
@@ -345,7 +414,7 @@ function renderDailyChart() {
 
   if (dailyChart) dailyChart.destroy();
 
-  dailyChart = new Chart(document.getElementById('dailyChart'), {
+  dailyChart = new Chart(canvas, {
     type: 'line',
     data: {
       labels,
@@ -467,6 +536,7 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
+setupSidebarCollapse();
 loadData();
 setupViews();
 setupPagination();
