@@ -32,36 +32,21 @@
       </div>
 
       <div class="menu">
-        <div class="menu-item active">
+        <button class="menu-item active" type="button" data-view="dashboard">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M3 12l9-9 9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M9 21V12h6v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           Dashboard
-        </div>
-        <div class="menu-item">
+        </button>
+        <button class="menu-item" type="button" data-view="leads">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M20 21V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
             <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
             <path d="M8 12h8M8 16h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
           Leads
-        </div>
-        <div class="menu-item">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M4 19V5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            <path d="M4 19h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            <path d="M8 15l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Gráficos
-        </div>
-        <div class="menu-item">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            <path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          </svg>
-          Responsáveis
-        </div>
+        </button>
       </div>
     </aside>
 
@@ -74,9 +59,9 @@
             </svg>
           </button>
           <div>
-          <h1>Dashboard</h1>
-          <p>Visão geral dos leads recebidos pelo site</p>
-        </div>
+            <h1 id="pageTitle">Dashboard</h1>
+            <p id="pageSubtitle">Visão geral dos leads recebidos pelo site</p>
+          </div>
         </div>
         <div class="top-actions">
           <input type="month" id="monthFilterTop" />
@@ -84,64 +69,69 @@
         </div>
       </section>
 
-      <section class="cards">
-        <div class="card"><span>Leads totais</span><strong id="totalLeads">0</strong></div>
-        <div class="card"><span>Leads no mês</span><strong id="monthLeads">0</strong></div>
-        <div class="card"><span>Leads qualificados</span><strong id="qualifiedLeads">0</strong></div>
-        <div class="card"><span>Pendentes</span><strong id="pendingLeads">0</strong></div>
-        <div class="card"><span>Contatados</span><strong id="contactedLeads">0</strong></div>
+      <section id="view-dashboard" data-view-panel="dashboard">
+        <section class="cards">
+          <div class="card"><span>Leads totais</span><strong id="totalLeads">0</strong></div>
+          <div class="card"><span>Leads no mês</span><strong id="monthLeads">0</strong></div>
+          <div class="card"><span>Leads qualificados</span><strong id="qualifiedLeads">0</strong></div>
+          <div class="card"><span>Pendentes</span><strong id="pendingLeads">0</strong></div>
+          <div class="card"><span>Contatados</span><strong id="contactedLeads">0</strong></div>
+        </section>
+
+        <section class="charts">
+          <div class="chart-box">
+            <h3>Leads por mês</h3>
+            <canvas id="monthlyChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <h3 id="dailyChartTitle">Leads por dia (mês)</h3>
+            <canvas id="dailyChart"></canvas>
+          </div>
+        </section>
       </section>
 
-      <section class="filters">
-        <input id="searchInput" placeholder="Buscar por nome, WhatsApp, e-mail, razão social ou CNPJ..." />
-        <select id="statusFilter">
-          <option value="">Todos os status</option>
-        </select>
-        <select id="responsavelFilter">
-          <option value="">Todos responsáveis</option>
-        </select>
-        <input type="month" id="monthFilter" />
-        <button onclick="clearFilters()">Limpar</button>
-        <button class="primary" onclick="applyFilters()">Aplicar</button>
-      </section>
+      <section id="view-leads" data-view-panel="leads" hidden>
+        <section class="filters">
+          <input id="searchInput" placeholder="Buscar por nome, WhatsApp, e-mail, razão social ou CNPJ..." />
+          <select id="statusFilter">
+            <option value="">Todos os status</option>
+          </select>
+          <select id="responsavelFilter">
+            <option value="">Todos responsáveis</option>
+          </select>
+          <input type="month" id="monthFilter" />
+          <button onclick="clearFilters()">Limpar</button>
+          <button class="primary" onclick="applyFilters()">Aplicar</button>
+        </section>
 
-      <section class="charts">
-        <div class="chart-box">
-          <h3>Leads por mês</h3>
-          <canvas id="monthlyChart"></canvas>
-        </div>
-        <div class="chart-box">
-          <h3 id="dailyChartTitle">Leads por dia</h3>
-          <canvas id="dailyChart"></canvas>
-        </div>
-      </section>
-
-      <section class="table-box">
-        <table>
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>WhatsApp</th>
-              <th>E-mail</th>
-              <th>Razão Social</th>
-              <th>CNPJ</th>
-              <th>Cidade/UF</th>
-              <th>Perfil</th>
-              <th>Marcas</th>
-              <th>Cadastro</th>
-              <th>Status</th>
-              <th>Responsável</th>
-              <th>Qualificado</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="leadsTable">
-            <tr><td colspan="13" class="loading">Carregando dados...</td></tr>
-          </tbody>
-        </table>
-        <div class="footer-table">
-          <span id="tableCount">0 registros</span>
-        </div>
+        <section class="table-box">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>WhatsApp</th>
+                <th>E-mail</th>
+                <th>Razão Social</th>
+                <th>CNPJ</th>
+                <th>Cidade/UF</th>
+                <th>Perfil</th>
+                <th>Marcas</th>
+                <th>Cadastro</th>
+              </tr>
+            </thead>
+            <tbody id="leadsTable">
+              <tr><td colspan="9" class="loading">Carregando dados...</td></tr>
+            </tbody>
+          </table>
+          <div class="footer-table">
+            <span id="tableCount">0 registros</span>
+            <div class="pagination" id="pagination">
+              <button type="button" class="small-btn" id="prevPage">Anterior</button>
+              <span class="page-indicator" id="pageIndicator">Página 1 de 1</span>
+              <button type="button" class="small-btn" id="nextPage">Próxima</button>
+            </div>
+          </div>
+        </section>
       </section>
     </main>
   </div>

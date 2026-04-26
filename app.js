@@ -1,5 +1,5 @@
-const SUPABASE_URL = 'COLE_AQUI_SUA_PROJECT_URL';
-const SUPABASE_ANON_KEY = 'COLE_AQUI_SUA_ANON_PUBLIC_KEY';
+const SUPABASE_URL = 'https://owxfcijomwurgujhjutd.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_bCwJRONYF73x3dfPIrfJ_Q_tYUrdWe_';
 
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -7,17 +7,97 @@ let allLeads = [];
 let filteredLeads = [];
 let monthlyChart = null;
 let dailyChart = null;
+const PAGE_SIZE = 50;
+let currentPage = 1;
+
+const APP_TIMEZONE = 'America/Sao_Paulo'; // UTC-3 (Brasil)
+
+function getTzParts(date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: APP_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit'
+  }).formatToParts(date);
+
+  const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  return {
+    year: map.year,
+    month: map.month,
+    day: map.day,
+    hour: map.hour
+  };
+}
+
+function toMonthKey(value) {
+  if (!value) return '';
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return '';
+  const p = getTzParts(dt);
+  return `${p.year}-${p.month}`;
+}
+
+function toDayKey(value) {
+  if (!value) return '';
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return '';
+  const p = getTzParts(dt);
+  return `${p.year}-${p.month}-${p.day}`;
+}
 
 const now = new Date();
-const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+const currentMonth = toMonthKey(now) || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
 document.getElementById('monthFilter').value = currentMonth;
 document.getElementById('monthFilterTop').value = currentMonth;
 
 document.getElementById('monthFilterTop').addEventListener('change', function () {
   document.getElementById('monthFilter').value = this.value;
-  applyFilters();
+  renderDashboard();
+  if (getCurrentView() === 'leads') applyFilters();
 });
+
+function getCurrentView() {
+  return document.body.dataset.view || 'dashboard';
+}
+
+function showView(view) {
+  document.body.dataset.view = view;
+
+  const panels = document.querySelectorAll('[data-view-panel]');
+  panels.forEach(panel => {
+    const panelView = panel.getAttribute('data-view-panel');
+    panel.hidden = panelView !== view;
+  });
+
+  const menuItems = document.querySelectorAll('[data-view]');
+  menuItems.forEach(item => {
+    item.classList.toggle('active', item.getAttribute('data-view') === view);
+  });
+
+  const title = document.getElementById('pageTitle');
+  const subtitle = document.getElementById('pageSubtitle');
+  if (title) title.textContent = view === 'leads' ? 'Leads' : 'Dashboard';
+  if (subtitle) subtitle.textContent = view === 'leads'
+    ? 'Lista e filtros de leads'
+    : 'Visão geral dos leads recebidos pelo site';
+
+  if (view === 'leads') {
+    currentPage = 1;
+    applyFilters();
+  } else {
+    renderDashboard();
+  }
+}
+
+function setupViews() {
+  const menuItems = document.querySelectorAll('[data-view]');
+  menuItems.forEach(item => {
+    item.addEventListener('click', () => showView(item.getAttribute('data-view')));
+  });
+  showView('dashboard');
+}
 
 // Sidebar responsiva (mobile)
 (function setupMobileSidebar() {
@@ -37,7 +117,7 @@ document.getElementById('monthFilterTop').addEventListener('change', function ()
 
 async function loadData() {
   const tbody = document.getElementById('leadsTable');
-  tbody.innerHTML = `<tr><td colspan="13" class="loading">Carregando dados...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="9" class="loading">Carregando dados...</td></tr>`;
 
   const { data, error } = await client
     .from('fomularios_site_digitalsat')
@@ -52,7 +132,7 @@ async function loadData() {
       estado,
       perfil,
       marcas,
-      data_cadastro,
+      created_at,
       status_lead,
       responsavel,
       data_primeiro_contato,
@@ -60,17 +140,18 @@ async function loadData() {
       observacoes,
       lead_qualificado
     `)
-    .order('data_cadastro', { ascending: false });
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error(error);
-    tbody.innerHTML = `<tr><td colspan="13" class="loading">Erro ao carregar dados: ${error.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="loading">Erro ao carregar dados: ${error.message}</td></tr>`;
     return;
   }
 
   allLeads = data || [];
   fillSelectFilters();
   applyFilters();
+  renderDashboard();
 }
 
 function applyFilters() {
@@ -89,7 +170,7 @@ function applyFilters() {
       lead.cnpj
     ].join(' ').toLowerCase();
 
-    const leadMonth = lead.data_cadastro ? lead.data_cadastro.slice(0, 7) : '';
+    const leadMonth = toMonthKey(lead.created_at);
 
     return (
       (!search || searchText.includes(search)) &&
@@ -99,9 +180,8 @@ function applyFilters() {
     );
   });
 
-  renderCards();
+  currentPage = 1;
   renderTable();
-  renderCharts();
 }
 
 function clearFilters() {
@@ -110,6 +190,7 @@ function clearFilters() {
   document.getElementById('responsavelFilter').value = '';
   document.getElementById('monthFilter').value = currentMonth;
   document.getElementById('monthFilterTop').value = currentMonth;
+  currentPage = 1;
   applyFilters();
 }
 
@@ -135,7 +216,9 @@ function fillSelectFilters() {
 function renderCards() {
   const selectedMonth = document.getElementById('monthFilter').value;
 
-  const monthLeads = allLeads.filter(l => l.data_cadastro && l.data_cadastro.slice(0, 7) === selectedMonth);
+  const monthLeads = allLeads.filter(l => {
+    return toMonthKey(l.created_at) === selectedMonth;
+  });
   const qualified = allLeads.filter(l => l.lead_qualificado === true);
   const pending = allLeads.filter(l => !l.status_lead || ['novo', 'pendente', 'agendar contato'].includes(String(l.status_lead).toLowerCase()));
   const contacted = allLeads.filter(l => String(l.status_lead || '').toLowerCase().includes('contat'));
@@ -147,17 +230,39 @@ function renderCards() {
   document.getElementById('contactedLeads').textContent = contacted.length;
 }
 
+function renderDashboard() {
+  renderCards();
+  renderCharts();
+}
+
 function renderTable() {
   const tbody = document.getElementById('leadsTable');
-  document.getElementById('tableCount').textContent = `${filteredLeads.length} registros`;
+  const total = filteredLeads.length;
+  document.getElementById('tableCount').textContent = `${total} registros`;
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  const startIdx = (currentPage - 1) * PAGE_SIZE;
+  const endIdx = Math.min(startIdx + PAGE_SIZE, total);
+
+  const prevBtn = document.getElementById('prevPage');
+  const nextBtn = document.getElementById('nextPage');
+  const indicator = document.getElementById('pageIndicator');
+
+  if (indicator) indicator.textContent = `Página ${currentPage} de ${totalPages}`;
+  if (prevBtn) prevBtn.disabled = currentPage <= 1;
+  if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
 
   if (!filteredLeads.length) {
-    tbody.innerHTML = `<tr><td colspan="13" class="loading">Nenhum lead encontrado.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="loading">Nenhum lead encontrado.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = filteredLeads.map(lead => {
-    const statusClass = getStatusClass(lead.status_lead);
+  const pageLeads = filteredLeads.slice(startIdx, endIdx);
+
+  tbody.innerHTML = pageLeads.map(lead => {
     const whatsappClean = String(lead.whatsapp || '').replace(/\D/g, '');
     const whatsappLink = whatsappClean ? `https://wa.me/55${whatsappClean}` : '#';
 
@@ -171,19 +276,17 @@ function renderTable() {
         <td>${escapeHtml(lead.cidade)} / ${escapeHtml(lead.estado)}</td>
         <td>${escapeHtml(lead.perfil)}</td>
         <td>${formatMarcas(lead.marcas)}</td>
-        <td>${formatDate(lead.data_cadastro)}</td>
-        <td><span class="badge ${statusClass}">${escapeHtml(lead.status_lead || 'Novo')}</span></td>
-        <td>${escapeHtml(lead.responsavel)}</td>
-        <td>${lead.lead_qualificado ? 'Sim' : 'Não'}</td>
-        <td>
-          <div class="actions">
-            <button class="small-btn success" onclick="markAsContacted('${lead.id}')">Contatado</button>
-            <button class="small-btn" onclick="editLead('${lead.id}')">Editar</button>
-          </div>
-        </td>
+        <td>${formatDate(lead.created_at)}</td>
       </tr>
     `;
   }).join('');
+}
+
+function setupPagination() {
+  const prevBtn = document.getElementById('prevPage');
+  const nextBtn = document.getElementById('nextPage');
+  if (prevBtn) prevBtn.addEventListener('click', () => { currentPage -= 1; renderTable(); });
+  if (nextBtn) nextBtn.addEventListener('click', () => { currentPage += 1; renderTable(); });
 }
 
 function renderCharts() {
@@ -195,8 +298,9 @@ function renderMonthlyChart() {
   const grouped = {};
 
   allLeads.forEach(lead => {
-    if (!lead.data_cadastro) return;
-    const month = lead.data_cadastro.slice(0, 7);
+    if (!lead.created_at) return;
+    const month = toMonthKey(lead.created_at);
+    if (!month) return;
     grouped[month] = (grouped[month] || 0) + 1;
   });
 
@@ -223,7 +327,9 @@ function renderMonthlyChart() {
 }
 
 function renderDailyChart() {
-  const selectedMonth = document.getElementById('monthFilter').value;
+  const selectedMonth = document.getElementById('monthFilterTop').value || document.getElementById('monthFilter').value;
+  if (!selectedMonth) return;
+
   const [year, month] = selectedMonth.split('-').map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
   const grouped = {};
@@ -233,14 +339,18 @@ function renderDailyChart() {
   }
 
   allLeads.forEach(lead => {
-    if (!lead.data_cadastro) return;
-    if (lead.data_cadastro.slice(0, 7) === selectedMonth) {
-      const day = lead.data_cadastro.slice(8, 10);
-      grouped[day] = (grouped[day] || 0) + 1;
-    }
+    if (!lead.created_at) return;
+    const keyMonth = toMonthKey(lead.created_at);
+    if (keyMonth !== selectedMonth) return;
+    const dt = new Date(lead.created_at);
+    if (Number.isNaN(dt.getTime())) return;
+    const p = getTzParts(dt);
+    const day = p.day;
+    grouped[day] = (grouped[day] || 0) + 1;
   });
 
-  document.getElementById('dailyChartTitle').textContent = `Leads por dia - ${selectedMonth}`;
+  const title = document.getElementById('dailyChartTitle');
+  if (title) title.textContent = `Leads por dia (mês) - ${selectedMonth}`;
 
   if (dailyChart) dailyChart.destroy();
 
@@ -338,7 +448,13 @@ function getStatusClass(status) {
 
 function formatDate(value) {
   if (!value) return '';
-  return new Date(value).toLocaleString('pt-BR');
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return '';
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: APP_TIMEZONE,
+    dateStyle: 'short',
+    timeStyle: 'short'
+  }).format(dt);
 }
 
 function formatMarcas(value) {
@@ -358,3 +474,5 @@ function escapeHtml(value) {
 }
 
 loadData();
+setupViews();
+setupPagination();

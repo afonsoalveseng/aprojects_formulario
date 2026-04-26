@@ -98,12 +98,21 @@ a:hover { text-decoration: underline; }
   background: rgba(255, 255, 255, 0);
   transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
   user-select: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
 }
 
 .menu-item:hover {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.08);
   transform: translateY(-1px);
+}
+
+.menu-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18);
 }
 
 .menu-item.active {
@@ -366,9 +375,30 @@ tbody tr:hover td { background: rgba(219, 234, 254, 0.45); }
   font-size: 13px;
   color: var(--muted);
   background: rgba(248, 250, 252, 0.65);
+  gap: 12px;
+  align-items: center;
 }
 
 .loading { padding: 24px; color: var(--muted); }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-indicator {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.small-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 
 .backdrop {
   position: fixed;
