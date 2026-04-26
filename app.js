@@ -219,15 +219,9 @@ function renderCards() {
   const monthLeads = allLeads.filter(l => {
     return toMonthKey(l.created_at) === selectedMonth;
   });
-  const qualified = allLeads.filter(l => l.lead_qualificado === true);
-  const pending = allLeads.filter(l => !l.status_lead || ['novo', 'pendente', 'agendar contato'].includes(String(l.status_lead).toLowerCase()));
-  const contacted = allLeads.filter(l => String(l.status_lead || '').toLowerCase().includes('contat'));
 
   document.getElementById('totalLeads').textContent = allLeads.length;
   document.getElementById('monthLeads').textContent = monthLeads.length;
-  document.getElementById('qualifiedLeads').textContent = qualified.length;
-  document.getElementById('pendingLeads').textContent = pending.length;
-  document.getElementById('contactedLeads').textContent = contacted.length;
 }
 
 function renderDashboard() {
@@ -332,11 +326,8 @@ function renderDailyChart() {
 
   const [year, month] = selectedMonth.split('-').map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
-  const grouped = {};
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    grouped[String(day).padStart(2, '0')] = 0;
-  }
+  const labels = Array.from({ length: daysInMonth }, (_, i) => String(i + 1).padStart(2, '0'));
+  const grouped = Object.fromEntries(labels.map(d => [d, 0]));
 
   allLeads.forEach(lead => {
     if (!lead.created_at) return;
@@ -357,10 +348,10 @@ function renderDailyChart() {
   dailyChart = new Chart(document.getElementById('dailyChart'), {
     type: 'line',
     data: {
-      labels: Object.keys(grouped),
+      labels,
       datasets: [{
         label: 'Leads',
-        data: Object.values(grouped),
+        data: labels.map(d => grouped[d]),
         borderColor: '#2563eb',
         backgroundColor: '#2563eb',
         tension: 0.35
@@ -368,7 +359,10 @@ function renderDailyChart() {
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } }
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { type: 'category' }
+      }
     }
   });
 }
